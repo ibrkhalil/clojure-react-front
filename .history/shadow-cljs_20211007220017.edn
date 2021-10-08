@@ -1,0 +1,14 @@
+{:source-paths ["src"]
+ :dependencies [[binaryage/devtools "1.0.3"]
+                [nrepl "0.8.3"]
+                [cljs-http "0.1.39"]
+                [clojure-csv.core "2.0.2"]
+                [reagent "1.1.0"]]
+ :builds       {:app {:target     :browser
+                      :output-dir "public/js"
+                      :asset-path "/js"
+                      :modules    {:app {:entries [clojure-react-front.core]}}
+                      :devtools   {:after-load clojure-react-front.core/mount-root}}}
+
+ :dev-http     {3000 {:root    "public"
+                      :handler user/app}}}
