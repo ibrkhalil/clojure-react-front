@@ -8,133 +8,25 @@
       [cljs.core.async :refer [<!]] [cljs-http.client :as http])
       (:require-macros [cljs.core.async.macros :refer [go]]))
 
-;; Atoms
-(def data (r/atom []))
-(def current-temp (r/atom false))
-(def current-capital (r/atom false))
-(def by-12-hr (r/atom false))
-(def by-24-hr (r/atom false))
-(def by-3-days (r/atom false))
-(def by-7-days (r/atom false))
-
-
-
+;; Main App State
+(def app-data (r/atom {:data [] :current-temp false :current-capital false :by-12-hr false :by-24-hr false :by-3-days false :by-7-days false}))
 ;; -------------------------
 ;; Views
-
-
-(defn by-current-temp [x y]
-  ;; :current-temp values sorted in increasing order because x and y
-  (
-  ;; if flag of current-temp is true then sort asc otherwise desc
-  if(== true (deref current-temp))
-  (let [c (compare (:current-temp x) (:current-temp y))]
-    (if (not= c 0)
-      c
-      ))
-
-    (let [c (compare (:current-temp y) (:current-temp x))]
-    (if (not= c 0)
-    c
-    ))
-      ))
-
-(defn by-12-hr-fn [x y]
-  ;; :by-12-hr values sorted in increasing order because x and y
-  (
-  ;; if flag of by-12-hr is true then sort asc otherwise desc
-  if(== true (deref by-12-hr))
-  (let [c (compare (:temp-in-12-hrs x) (:temp-in-12-hrs y))]
-    (if (not= c 0)
-      c
-      ))
-
-    (let [c (compare (:temp-in-12-hrs y) (:temp-in-12-hrs x))]
-    (if (not= c 0)
-    c
-    ))
-      ))
-
-(defn by-24-hr-fn [x y]
-  ;; :by-24-hr values sorted in increasing order because x and y
-  (
-  ;; if flag of by-24-hr is true then sort asc otherwise desc
-  if(== true (deref by-24-hr))
-  (let [c (compare (:temp-in-24-hrs x) (:temp-in-24-hrs y))]
-    (if (not= c 0)
-      c
-      ))
-
-    (let [c (compare (:temp-in-24-hrs y) (:temp-in-24-hrs x))]
-    (if (not= c 0)
-    c
-    ))
-      ))
-      
-(defn by-3-days-fn [x y]
-  ;; :by-3-days values sorted in increasing order because x and y
-  (
-  ;; if flag of by-3-days is true then sort asc otherwise desc
-  if(== true (deref by-3-days))
-  (let [c (compare (:temp-in-3-days x) (:temp-in-3-days y))]
-    (if (not= c 0)
-      c
-      ))
-
-    (let [c (compare (:temp-in-3-days y) (:temp-in-3-days x))]
-    (if (not= c 0)
-    c
-    ))
-      ))
-
-(defn by-7-days-fn [x y]
-  ;; :by-7-days values sorted in increasing order because x and y
-  (
-  ;; if flag of by-7-days is true then sort asc otherwise desc
-  if(== true (deref by-7-days))
-  (let [c (compare (:temp-in-7-days x) (:temp-in-7-days y))]
-    (if (not= c 0)
-      c
-      ))
-
-    (let [c (compare (:temp-in-7-days y) (:temp-in-7-days x))]
-    (if (not= c 0)
-    c
-    ))
-      ))
-
-      (defn by-current-capital [x y]
-  ;; :current-capital values sorted in increasing order because x and y
-  (
-  ;; if flag of current-capital is true then sort asc otherwise desc
-  if(== true (deref current-capital))
-  (let [c (compare (:capital x) (:capital y))]
-    (if (not= c 0)
-      c
-      ))
-
-    (let [c (compare (:capital y) (:capital x))]
-    (if (not= c 0)
-    c
-    ))
-      ))
-
-
 
 (defn data-list []
 [:table
 [:tbody
   [:tr
   [:th "Country"]
-  [:th {:on-click #(let [old-data @data old-capital @current-capital] (reset! current-capital (if (= old-capital true) false true)) (reset! data (sort by-current-capital old-data)) )} "Capital" ]
-  [:th {:on-click #(let [old-data @data old-temp @current-temp] (reset! current-temp (if (= old-temp true) false true)) (reset! data (sort by-current-temp old-data)) )} "current temperature"]
-  [:th {:on-click #(let [old-data @data old-by-12-hr @by-12-hr] (reset! by-12-hr (if (= old-by-12-hr true) false true)) (reset! data (sort by-12-hr-fn old-data)) )} "temperature after 12 hours"]
-  [:th {:on-click #(let [old-data @data old-by-24-hr @by-24-hr] (reset! by-24-hr (if (= old-by-24-hr true) false true)) (reset! data (sort by-24-hr-fn old-data)) )} "temperature after 24 hours"]
-  [:th {:on-click #(let [old-data @data old-by-3-days @by-3-days] (reset! by-3-days (if (= old-by-3-days true) false true)) (reset! data (sort by-3-days-fn old-data)) )} "temperature after 3 days"]
-  [:th {:on-click #(let [old-data @data old-by-7-days @by-7-days] (reset! by-7-days (if (= old-by-7-days true) false true)) (reset! data (sort by-7-days-fn old-data)) )} "temperature after 7 days"]]
+  [:th {:on-click #(let [old-data (:data @app-data) old-capital (:current-capital @app-data)] (swap! app-data assoc :current-capital (if (not= old-capital false) false true)) (swap! app-data assoc :data (vec (sort-by :capital (if (not= old-capital false) > <) old-data))) )} "Capital" ]
+  [:th {:on-click #(let [old-data (:data @app-data) old-temp (:current-temp @app-data)] (swap! app-data assoc :current-temp (if (not= old-temp false) false true)) (swap! app-data assoc :data (vec (sort-by :current-temp (if (not= old-temp false) > <) old-data))) )} "current temperature"]
+  [:th {:on-click #(let [old-data (:data @app-data) old-by-12-hr (:by-12-hr @app-data)] (swap! app-data assoc :by-12-hr (if (not= old-by-12-hr false) false true)) (swap! app-data assoc :data (vec (sort-by :temp-in-12-hrs (if (not= old-by-12-hr false) > <) old-data))) )} "temperature after 12 hours"]
+  [:th {:on-click #(let [old-data (:data @app-data) old-by-24-hr (:by-24-hr @app-data)] (swap! app-data assoc :by-24-hr (if (not= old-by-24-hr false) false true)) (swap! app-data assoc :data (vec (sort-by :temp-in-24-hrs (if (not= old-by-24-hr false) > <) old-data))) )} "temperature after 24 hours"]
+  [:th {:on-click #(let [old-data (:data @app-data) old-by-3-days (:by-3-days @app-data)] (swap! app-data assoc :by-3-days (if (not= old-by-3-days false) false true)) (swap! app-data assoc :data (vec (sort-by :temp-in-3-days (if (not= old-by-3-days false) > <) old-data))) )} "temperature after 3 days"]
+  [:th {:on-click #(let [old-data (:data @app-data) old-by-7-days (:by-7-days @app-data)] (swap! app-data assoc :by-7-days (if (not= old-by-7-days false) false true)) (swap! app-data assoc :data (vec (sort-by :temp-in-7-days (if (not= old-by-7-days false) > <) old-data))) )} "temperature after 7 days"]]
 
   ;; Map random temperatures to the table and drop the first record cause it's already filled in the table's heading
-   (drop 1(map (fn [item] ^{:key item} [:tr [:td (:country item)] [:td (:capital item)] [:td (:current-temp item) " Celsius"] [:td (:temp-in-12-hrs item) " Celsius"] [:td (:temp-in-24-hrs item) " Celsius"] [:td (:temp-in-3-days item) " Celsius"] [:td (:temp-in-7-days item) " Celsius"]]) @data))
+   (drop 1(map (fn [item] ^{:key item} [:tr [:td (:country item)] [:td (:capital item)] [:td (:current-temp item) " Celsius"] [:td (:temp-in-12-hrs item) " Celsius"] [:td (:temp-in-24-hrs item) " Celsius"] [:td (:temp-in-3-days item) " Celsius"] [:td (:temp-in-7-days item) " Celsius"]]) (:data @app-data)))
   
 ]]
 
@@ -142,13 +34,13 @@
 
 ;; Reading CSV
 (go (let [response (<! (http/get "https://raw.githubusercontent.com/icyrockcom/country-capitals/master/data/country-list.csv" {:with-credentials? false :type "text/csv; charset=utf-8"}))]
-  (reset! data (drop 1(seq (map (fn [item] {:country (first item) :capital  (second item) :current-temp (.floor js/Math(* 100 (.random js/Math))) :temp-in-12-hrs (.floor js/Math(* 100 (.random js/Math)))  :temp-in-24-hrs (.floor js/Math(* 100 (.random js/Math))) :temp-in-3-days (.floor js/Math(* 100 (.random js/Math))) :temp-in-7-days (.floor js/Math(* 100 (.random js/Math)))} ) (csv/parse (:body response))))))))
+  (swap! app-data assoc :data (drop 1(seq (map (fn [item] {:country (first item) :capital  (second item) :current-temp (Math/floor (* 100 (Math/random))) :temp-in-12-hrs (Math/floor (* 100 (Math/random)))  :temp-in-24-hrs (Math/floor (* 100 (Math/random))) :temp-in-3-days (Math/floor (* 100 (Math/random))) :temp-in-7-days (Math/floor (* 100 (Math/random)))} ) (csv/parse (:body response))))))))
   
 
 
 (defn home-page []
-  
-   [data-list])
+   [data-list]
+   )
 
 
  
